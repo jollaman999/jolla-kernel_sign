@@ -1,0 +1,85 @@
+#!/bin/bash
+
+trap ctrl_c INT
+
+function ctrl_c() {
+  echo
+  echo Canceled by user.
+  echo Deleting generated files...
+  delete
+  exit -1
+}
+
+function delete() {
+  rm -rf ~/manifest.json ~/bullhead.json ~/jolla-kernel_tmp.zip ~/jolla-kernel_AIO_bullhead_II-v*.zip*
+}
+
+delete
+
+if [ -z "$1" ] ; then
+  echo Input version!
+  exit -2
+fi
+
+cd
+cd jolla-kernel_AIO/
+
+zip -9 -r -v ~/jolla-kernel_tmp.zip . -x ./*.git/*
+
+if [ -e ~/jolla-kernel_tmp.zip ]; then
+  java -jar ~/bin/signapk.jar -w ~/key/jollaman999.x509.pem ~/key/jollaman999.pk8 ~/jolla-kernel_tmp.zip ~/jolla-kernel_AIO_bullhead_II-v$1.zip
+  rm ~/jolla-kernel_tmp.zip
+  echo
+  echo Sign OK!
+else
+  echo
+  echo ZIP failed.
+  echo Exiting...
+  exit -3
+fi
+
+if [ -e ~/jolla-kernel_AIO_bullhead_II-v$1.zip ]; then
+  echo
+  md5sum ~/jolla-kernel_AIO_bullhead_II-v$1.zip > ~/jolla-kernel_AIO_bullhead_II-v$1.zip.md5sum
+  md5sum ~/jolla-kernel_AIO_bullhead_II-v$1.zip
+  cat ~/jolla-kernel_AIO_bullhead_II-v$1.zip.md5sum
+else
+  echo
+  echo Sign failed.
+  echo Exiting...
+  exit -4
+fi
+
+cd ~
+
+echo Generating json...
+echo "{" > bullhead.json
+echo "    \"success\" : true," >> bullhead.json
+echo "    \"message\" : \"OK\"," >> bullhead.json
+echo "    \"data\" :" >> bullhead.json
+echo "    {" >> bullhead.json
+echo "        \"kernel\" : \"jolla-kernel\"," >> bullhead.json
+echo "        \"url\" : \"http://tp.jollaman999.com/jolla-kernel_AIO-bullhead/jolla-kernel_AIO_bullhead_II-v"$1".zip\"," >> bullhead.json
+echo "        \"md5\" : \"`awk '{ print $1 }' ~/jolla-kernel_AIO_bullhead_II-v$1.zip.md5sum`\"," >> bullhead.json
+echo "        \"version\" : \"v"$1"\"," >> bullhead.json
+echo "        \"date\" : \""`date +%Y%m%d-%H%M`"\"" >> bullhead.json
+echo "    }" >> bullhead.json
+echo "}" >> bullhead.json
+
+echo "                {" > manifest.json
+echo "                    \"url\" : \"http://tp.jollaman999.com/jolla-kernel_AIO-bullhead/MultiROM_Only/jolla-recovery_bullhead_II-v$1_"`date +%y%m%d`".img\"," >> manifest.json
+echo "                    \"version\" : \"mrom"`date +%Y%m%d-00`"\"," >> manifest.json
+echo "                    \"type\" : \"recovery\"," >> manifest.json
+echo "                    \"size\" : `ls -al ~/jolla-kernel_AIO/jolla-recovery/twrp/recovery.img | awk '{ print $5 }'`," >> manifest.json
+echo "                    \"md5\" : \"`md5sum ~/jolla-kernel_AIO/jolla-recovery/twrp/recovery.img | awk '{ print $1 }'`\"" >> manifest.json
+echo "                }," >> manifest.json
+
+echo "                {" >> manifest.json
+echo "                    \"url\" : \"http://tp.jollaman999.com/jolla-kernel_AIO-bullhead/jolla-kernel_AIO_bullhead_II-v"$1".zip\"," >> manifest.json
+echo "                    \"version\" : \"jolla-kernel_AIO_bullhead_II-v"$1"\"," >> manifest.json
+echo "                    \"type\" : \"kernel\"," >> manifest.json
+echo "                    \"size\" : `ls -al ~/jolla-kernel_AIO_bullhead_II-v$1.zip | awk '{ print $5 }'`," >> manifest.json
+echo "                    \"md5\" : \"`awk '{ print $1 }' ~/jolla-kernel_AIO_bullhead_II-v$1.zip.md5sum`\"" >> manifest.json
+echo "                }," >> manifest.json
+
+exit 0
