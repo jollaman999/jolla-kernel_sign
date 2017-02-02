@@ -62,7 +62,7 @@ echo "        \"kernel\" : \"jolla-kernel\"," >> bullhead.json
 echo "        \"url\" : \"http://tp.jollaman999.com/jolla-kernel_AIO-bullhead/jolla-kernel_AIO_bullhead_II-v"$1".zip\"," >> bullhead.json
 echo "        \"md5\" : \"`awk '{ print $1 }' ~/jolla-kernel_AIO_bullhead_II-v$1.zip.md5sum`\"," >> bullhead.json
 echo "        \"version\" : \"v"$1"\"," >> bullhead.json
-echo "        \"date\" : \""`date +%Y%m%d-%H%M`"\"" >> bullhead.json
+echo "        \"date\" : \""`cat ~/jolla_kernel_timestamp`"\"" >> bullhead.json
 echo "    }" >> bullhead.json
 echo "}" >> bullhead.json
 
